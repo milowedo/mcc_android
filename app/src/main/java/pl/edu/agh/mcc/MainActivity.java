@@ -12,6 +12,9 @@ import android.widget.TextView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import pl.edu.agh.mcc.tasks.MatrixTaskLocal;
+import pl.edu.agh.mcc.tasks.MatrixTaskRemote;
+
 public class MainActivity extends AppCompatActivity {
     private TextView resultText;
     private EditText sizeInputField;
@@ -29,26 +32,45 @@ public class MainActivity extends AppCompatActivity {
 
         this.sizeInputField = findViewById(R.id.sizeInputField);
 
-        Button startButton = findViewById(R.id.startTestButton);
-        startButton.setText("Run task");
-        startButton.setOnClickListener(v -> {
-            int taskSize = 500;
+        Button startLocalButton = findViewById(R.id.startLocalTestButton);
+        startLocalButton.setText("Run local");
+        startLocalButton.setOnClickListener(v -> {
+            int taskSize = 200;
             try {
                 taskSize = Integer.parseInt(sizeInputField.getText().toString());
             } catch (Exception e) {
                 System.out.println("Wrong input size, defaulting to: " + taskSize);
                 this.sizeInputField.setText(String.valueOf(taskSize));
             }
-            InstrumentationData results = executeTaskAndGatherMetrics(taskSize);
+            InstrumentationData results = executeTaskAndGatherMetrics(taskSize, InstrumentationData.EXECUTION.LOCAL);
+
+            this.resultText.setText(gson.toJson(results));
+        });
+
+        Button startRemoteButton = findViewById(R.id.startRemoteTestButton);
+        startRemoteButton.setText("Run cloud");
+        startRemoteButton.setOnClickListener(v -> {
+            int taskSize = 200;
+            try {
+                taskSize = Integer.parseInt(sizeInputField.getText().toString());
+            } catch (Exception e) {
+                System.out.println("Wrong input size, defaulting to: " + taskSize);
+                this.sizeInputField.setText(String.valueOf(taskSize));
+            }
+            InstrumentationData results = executeTaskAndGatherMetrics(taskSize, InstrumentationData.EXECUTION.CLOUD);
 
             this.resultText.setText(gson.toJson(results));
         });
     }
 
-    private InstrumentationData executeTaskAndGatherMetrics(int matrixSize) {
+    private InstrumentationData executeTaskAndGatherMetrics(int matrixSize, InstrumentationData.EXECUTION execution) {
         InstrumentationData instrumentedEventData = new InstrumentationData(this);
-
-        Thread task = new Thread(new MatrixTask(matrixSize));
+        Thread task;
+        if (execution == InstrumentationData.EXECUTION.CLOUD) {
+            task = new Thread(new MatrixTaskRemote(matrixSize));
+        } else {
+            task = new Thread(new MatrixTaskLocal(matrixSize));
+        }
         instrumentedEventData.taskInformation.taskName = "MatrixTask";
         instrumentedEventData.taskInformation.taskSize = matrixSize;
 
@@ -64,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         instrumentedEventData.timeMeasurements.endTime = System.currentTimeMillis();
+        instrumentedEventData.timeMeasurements.updateTotalTime();
         instrumentedEventData.batteryInformation.endValueUpdate(batteryStatus);
 
         return instrumentedEventData;

@@ -15,34 +15,43 @@
         android:gravity="center"
         android:hint="task size"
         android:inputType="textPersonName"
-        app:layout_constraintBottom_toTopOf="@+id/startTestButton"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-
     <Button
-        android:id="@+id/startTestButton"
+        android:id="@+id/startLocalTestButton"
         android:layout_width="100dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
         android:layout_marginTop="5dp"
-        android:text="Button"
+        android:text="Button1"
         app:layout_constraintBottom_toTopOf="@+id/resultText"
         app:layout_constraintStart_toStartOf="@+id/sizeInputField"
-        app:layout_constraintTop_toBottomOf="@+id/sizeInputField" />
+        app:layout_constraintTop_toBottomOf="@+id/sizeInputField"
+        app:layout_constraintVertical_bias="0.061" />
+
+    <Button
+        android:id="@+id/startRemoteTestButton"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="524dp"
+        android:text="Button2"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/startLocalTestButton"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="@+id/startLocalTestButton" />
 
     <TextView
         android:id="@+id/resultText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="15dp"
+        android:paddingBottom="10dp"
         android:paddingHorizontal="5pt"
         android:text="Run the task to yield results!"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/startTestButton" />
+        app:layout_constraintTop_toBottomOf="@+id/startRemoteTestButton" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
