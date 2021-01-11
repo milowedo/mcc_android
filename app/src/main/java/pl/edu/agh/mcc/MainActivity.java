@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
         instrumentedEventData.taskInformation.taskName = "MatrixTask";
         instrumentedEventData.taskInformation.taskSize = matrixSize;
 
-        instrumentedEventData.batteryInformation.startValueUpdate(batteryStatus);
+        instrumentedEventData.batteryInformation.startValueUpdate(batteryStatus, this);
         instrumentedEventData.executionLocation = InstrumentationData.EXECUTION.LOCAL;
         instrumentedEventData.timeMeasurements.startTime = System.currentTimeMillis();
 
@@ -87,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
 
         instrumentedEventData.timeMeasurements.endTime = System.currentTimeMillis();
         instrumentedEventData.timeMeasurements.updateTotalTime();
-        instrumentedEventData.batteryInformation.endValueUpdate(batteryStatus);
+        instrumentedEventData.batteryInformation.endValueUpdate(batteryStatus, this);
 
         return instrumentedEventData;
     }
