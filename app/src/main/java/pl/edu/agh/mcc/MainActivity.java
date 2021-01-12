@@ -12,13 +12,21 @@ import android.widget.TextView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import pl.edu.agh.mcc.tasks.MatrixTaskLocal;
 import pl.edu.agh.mcc.tasks.MatrixTaskRemote;
 
 public class MainActivity extends AppCompatActivity {
+    private ExecutorService executorService = Executors.newFixedThreadPool(1);
+
     private TextView resultText;
     private EditText sizeInputField;
+
     private Intent batteryStatus;
+
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     @Override
@@ -65,11 +73,11 @@ public class MainActivity extends AppCompatActivity {
 
     private InstrumentationData executeTaskAndGatherMetrics(int matrixSize, InstrumentationData.EXECUTION execution) {
         InstrumentationData instrumentedEventData = new InstrumentationData(this);
-        Thread task;
+        Runnable taskToRun;
         if (execution == InstrumentationData.EXECUTION.CLOUD) {
-            task = new Thread(new MatrixTaskRemote(matrixSize, instrumentedEventData));
+            taskToRun = new MatrixTaskRemote(matrixSize, instrumentedEventData);
         } else {
-            task = new Thread(new MatrixTaskLocal(matrixSize, instrumentedEventData));
+            taskToRun = new MatrixTaskLocal(matrixSize, instrumentedEventData);
         }
         instrumentedEventData.taskInformation.taskName = "MatrixTask";
         instrumentedEventData.taskInformation.taskSize = matrixSize;
@@ -78,9 +86,8 @@ public class MainActivity extends AppCompatActivity {
         instrumentedEventData.timeMeasurements.startTime = System.currentTimeMillis();
 
         try {
-            task.start();
-            task.join();
-        } catch (InterruptedException e) {
+            executorService.submit(taskToRun).get();
+        } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
 
