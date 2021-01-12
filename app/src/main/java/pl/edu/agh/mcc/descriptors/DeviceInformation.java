@@ -14,7 +14,7 @@ public class DeviceInformation {
     public String deviceId;
 
     //Cannot be sure the number returned is the actual number of all the processors on the device.
-    private int numAvailableProcessors;
+    private String numAvailableProcessors;
 
     //Maximum amount the JVM will try to use, if not specified - Long.MAX_VALUE
     public final long maxMemoryMBytes = (long) (Runtime.getRuntime().maxMemory() * 1e-6);
@@ -39,7 +39,7 @@ public class DeviceInformation {
             e.printStackTrace();
         }
         this.platform_chipset = cpuInfo.get("Hardware");
-        numAvailableProcessors = Integer.parseInt(cpuInfo.get("CPU_architecture"));
+        this.numAvailableProcessors = cpuInfo.get("CPU_architecture");
         this.platform_os = this.getOsInfo();
 
     }
