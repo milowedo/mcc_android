@@ -67,15 +67,14 @@ public class MainActivity extends AppCompatActivity {
         InstrumentationData instrumentedEventData = new InstrumentationData(this);
         Thread task;
         if (execution == InstrumentationData.EXECUTION.CLOUD) {
-            task = new Thread(new MatrixTaskRemote(matrixSize));
+            task = new Thread(new MatrixTaskRemote(matrixSize, instrumentedEventData));
         } else {
-            task = new Thread(new MatrixTaskLocal(matrixSize));
+            task = new Thread(new MatrixTaskLocal(matrixSize, instrumentedEventData));
         }
         instrumentedEventData.taskInformation.taskName = "MatrixTask";
         instrumentedEventData.taskInformation.taskSize = matrixSize;
 
         instrumentedEventData.batteryInformation.startValueUpdate(batteryStatus, this);
-        instrumentedEventData.executionLocation = InstrumentationData.EXECUTION.LOCAL;
         instrumentedEventData.timeMeasurements.startTime = System.currentTimeMillis();
 
         try {

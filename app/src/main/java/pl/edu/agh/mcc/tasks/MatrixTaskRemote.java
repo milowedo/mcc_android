@@ -17,10 +17,12 @@ public class MatrixTaskRemote implements Runnable {
     private final double[][] array;
     private final double coeff;
 
-    public MatrixTaskRemote(int matrixSize) {
+    public MatrixTaskRemote(int matrixSize, InstrumentationData instrumentedEventData) {
         this.size = matrixSize;
         this.array = new double[size][size];
         this.coeff = new Random().nextDouble();
+        instrumentationDataObject = instrumentedEventData;
+        this.instrumentationDataObject.executionLocation = InstrumentationData.EXECUTION.CLOUD;
     }
 
     @Override
