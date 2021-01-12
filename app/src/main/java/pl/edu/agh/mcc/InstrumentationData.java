@@ -12,6 +12,7 @@ import pl.edu.agh.mcc.descriptors.DeviceInformation;
 import pl.edu.agh.mcc.descriptors.NetworkInformation;
 import pl.edu.agh.mcc.descriptors.TaskInformation;
 import pl.edu.agh.mcc.descriptors.TimeMeasurements;
+import pl.edu.agh.mcc.descriptors.cloud.CloudResultInformation;
 
 public class InstrumentationData {
     private static final String ID_KEY = "DEVICE_ID";
@@ -24,6 +25,8 @@ public class InstrumentationData {
     public NetworkInformation networkInformation;
     public TimeMeasurements timeMeasurements;
     public TaskInformation taskInformation;
+
+    public CloudResultInformation cloudResultInformation;
 
     public InstrumentationData(Context context) {
         this.deviceInformation = new DeviceInformation();
