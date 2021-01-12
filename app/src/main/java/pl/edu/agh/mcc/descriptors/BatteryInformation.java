@@ -9,6 +9,7 @@ import android.os.Build;
 public class BatteryInformation {
     public double batteryPercentStart;
     public double batteryPercentEnd;
+    public double batteryPercentDelta;
     public long batteryCapacityStart;
     public long batteryCapacityEnd;
     public long batteryCapacityDelta;
@@ -22,6 +23,7 @@ public class BatteryInformation {
         this.batteryPercentEnd = getBatteryPercent(batteryStatus);
         this.batteryCapacityEnd = getCurrentBatteryCapacity(context);
         this.batteryCapacityDelta = batteryCapacityStart - batteryCapacityEnd;
+        this.batteryPercentDelta = batteryPercentStart - batteryPercentEnd;
     }
 
     private int getBatteryPercent(Intent batteryStatus) {
