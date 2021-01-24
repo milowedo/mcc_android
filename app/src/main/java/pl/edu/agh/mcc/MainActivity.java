@@ -16,6 +16,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import pl.edu.agh.mcc.ML.LocationExecutionDecider;
 import pl.edu.agh.mcc.tasks.MatrixTaskLocal;
 import pl.edu.agh.mcc.tasks.MatrixTaskRemote;
 
@@ -66,6 +67,27 @@ public class MainActivity extends AppCompatActivity {
                 this.sizeInputField.setText(String.valueOf(taskSize));
             }
             InstrumentationData results = executeTaskAndGatherMetrics(taskSize, InstrumentationData.EXECUTION.CLOUD);
+
+            this.resultText.setText(gson.toJson(results));
+        });
+
+        Button chooseLocationButton = findViewById(R.id.chooseLocationButton);
+        chooseLocationButton.setText("Run task");
+        chooseLocationButton.setOnClickListener(v -> {
+            int taskSize = 200;
+            try {
+                taskSize = Integer.parseInt(sizeInputField.getText().toString());
+            } catch (Exception e) {
+                System.out.println("Wrong input size, defaulting to: " + taskSize);
+                this.sizeInputField.setText(String.valueOf(taskSize));
+            }
+            LocationExecutionDecider executionDecider = new LocationExecutionDecider(batteryStatus, this);
+            InstrumentationData results = null;
+            try {
+                results = executionDecider.chooseExecutionLocation(taskSize);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
             this.resultText.setText(gson.toJson(results));
         });

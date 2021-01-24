@@ -7,8 +7,8 @@ import android.telephony.TelephonyManager;
 
 public class NetworkInformation {
 
-    String connectionType;
-    String connectionSubType;
+    public String connectionType;
+    public String connectionSubType;
 
     public void updateInformation(Context context) {
         NetworkInfo info = NetworkInformation.getNetworkInfo(context);

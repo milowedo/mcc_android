@@ -53,4 +53,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <Button
+        android:id="@+id/chooseLocationButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="3dp"
+        android:layout_marginEnd="4dp"
+        android:layout_marginBottom="12dp"
+        android:text="Button"
+        app:layout_constraintBottom_toTopOf="@+id/resultText"
+        app:layout_constraintEnd_toStartOf="@+id/startRemoteTestButton"
+        app:layout_constraintStart_toEndOf="@+id/startLocalTestButton" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
