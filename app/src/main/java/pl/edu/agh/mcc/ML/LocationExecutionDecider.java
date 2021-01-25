@@ -139,7 +139,7 @@ public class LocationExecutionDecider {
         if (timePredictionSet == null) {
             //wygenerowac pliki arff, jeden an pdostawie baterii drugi na podstawie pomiarow
             List<InstrumentationData> instrumentationDataSet = generateTrainData();
-            timePredictionSet = getDatasetForTimePrediction(instrumentationDataSet); //trzymac to zamiast examples
+            timePredictionSet = getDatasetForTimePrediction(instrumentationDataSet); //trzymac to zamiast example
             batteryPredictionSet= getDatasetForBatteryPrediction(instrumentationDataSet); //trzymac to zamiast examples
             //System.out.println(trainData);
             // wytrenowac dwa modele na tym klasyfikatorze
@@ -149,40 +149,60 @@ public class LocationExecutionDecider {
         }
         InstrumentationData instrumentedEventData = new InstrumentationData(context);
 
-        double[] values = new double[4];
-        values[0] = 200;
-        values[1] = executionLocationValues.indexOf(InstrumentationData.EXECUTION.LOCAL.name());
-        values[2] = connectionTypeValues.indexOf(instrumentedEventData.networkInformation.connectionType);
-        Instance i = new DenseInstance(1.0, values);
-        i.setDataset(timePredictionSet);
+        //predict time for local
+        double[] valuesTimeLocal = new double[4];
+        valuesTimeLocal[0] = matrixSize;
+        valuesTimeLocal[1] = executionLocationValues.indexOf(InstrumentationData.EXECUTION.LOCAL.name());
+        valuesTimeLocal[2] = connectionTypeValues.indexOf(instrumentedEventData.networkInformation.connectionType);
+        Instance instanceLocalTime = new DenseInstance(1.0, valuesTimeLocal);
+        instanceLocalTime.setDataset(timePredictionSet);
+        double timeForLocal=timeClassifier.classifyInstance(instanceLocalTime);
+
+        //predict time for cloud
+        double[] valuesTimeCloud = new double[4];
+        valuesTimeCloud[0] = matrixSize;
+        valuesTimeCloud[1] = executionLocationValues.indexOf(InstrumentationData.EXECUTION.CLOUD.name());
+        valuesTimeCloud[2] = connectionTypeValues.indexOf(instrumentedEventData.networkInformation.connectionType);
+        Instance instanceCloudTime = new DenseInstance(1.0, valuesTimeCloud);
+        instanceCloudTime.setDataset(timePredictionSet);
+        double timeForCloud=timeClassifier.classifyInstance(instanceCloudTime);
+
+        //predict battery
+        double[] valuesBatteryLocal = new double[4];
+        valuesBatteryLocal[0] = matrixSize;
+        valuesBatteryLocal[1] = executionLocationValues.indexOf(InstrumentationData.EXECUTION.LOCAL.name());
+        valuesBatteryLocal[2] = connectionTypeValues.indexOf(instrumentedEventData.networkInformation.connectionType);
+        Instance instanceLocalBattery = new DenseInstance(1.0, valuesBatteryLocal);
+        instanceLocalBattery.setDataset(batteryPredictionSet);
+        double batteryForLocal=batteryClassifier.classifyInstance(instanceLocalBattery);
+
+        double[] valuesBatteryCloud = new double[4];
+        valuesBatteryCloud[0] = matrixSize;
+        valuesBatteryCloud[1] = executionLocationValues.indexOf(InstrumentationData.EXECUTION.CLOUD.name());
+        valuesBatteryCloud[2] = connectionTypeValues.indexOf(instrumentedEventData.networkInformation.connectionType);
+        Instance instanceCloudBattery = new DenseInstance(1.0, valuesBatteryCloud);
+        instanceCloudBattery.setDataset(batteryPredictionSet);
+        double batteryForCloud=batteryClassifier.classifyInstance(instanceCloudBattery);
+
         //spr przewidywanie dla jednej lokalizacji, dla drugiej
         //tam gdzie min funkcja wybierz wykonanie; jesli dwa modele to bierzemy srednia wazona z ich wynikow
-        double timeForLocal=timeClassifier.classifyInstance(i);
-        values[1] = executionLocationValues.indexOf(InstrumentationData.EXECUTION.CLOUD.name());
-        double timeForCloud=timeClassifier.classifyInstance(i);
-
-        i.setDataset(batteryPredictionSet);
-        double batteryForCloud=batteryClassifier.classifyInstance(i);
-        values[1] = executionLocationValues.indexOf(InstrumentationData.EXECUTION.LOCAL.name());
-        double batteryForLocal= batteryClassifier.classifyInstance(i);
         double predictedCostForCloud = (timeForCloud*0.5 + batteryForCloud*0.5)/2;
         double predictedCostForLocal = (timeForLocal*0.5 + batteryForLocal*0.5)/2;
         InstrumentationData instrumentationData;
-        if (timeForLocal > predictedCostForCloud) {
+        if (predictedCostForLocal > predictedCostForCloud) {
             instrumentationData = executeTaskAndGatherMetrics(matrixSize, InstrumentationData.EXECUTION.CLOUD);
             //instrumentationData = executeTaskAndGatherMetrics(100, InstrumentationData.EXECUTION.LOCAL);
-            values[3] = timeForCloud;
-            timePredictionSet.add(i);
-            values[3] = batteryForCloud;
-            batteryPredictionSet.add(i);
+            valuesTimeCloud[3] = instrumentationData.timeMeasurements.totalTime;
+            timePredictionSet.add(instanceCloudTime);
+            valuesBatteryCloud[3] = instrumentationData.batteryInformation.batteryCapacityDelta;
+            batteryPredictionSet.add(instanceCloudBattery);
         }
         else {
-            values[1] = executionLocationValues.indexOf(InstrumentationData.EXECUTION.LOCAL.name());
             instrumentationData = executeTaskAndGatherMetrics(matrixSize, InstrumentationData.EXECUTION.LOCAL);
-            values[3] = timeForLocal;
-            timePredictionSet.add(i);
-            values[3] = batteryForLocal;
-            batteryPredictionSet.add(i);
+            valuesTimeLocal[3] = instrumentationData.timeMeasurements.totalTime;
+            timePredictionSet.add(instanceLocalTime);
+            valuesBatteryLocal[3] = instrumentationData.batteryInformation.batteryCapacityDelta;
+            batteryPredictionSet.add(instanceLocalBattery);
         }
         timeClassifier.buildClassifier(timePredictionSet);
         batteryClassifier.buildClassifier(batteryPredictionSet);
