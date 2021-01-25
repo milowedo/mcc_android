@@ -3,11 +3,14 @@ package pl.edu.agh.mcc.ML;
 import android.content.Context;
 import android.content.Intent;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 import pl.edu.agh.mcc.InstrumentationData;
+import pl.edu.agh.mcc.descriptors.cloud.CloudExecutionRatio;
+import pl.edu.agh.mcc.descriptors.cloud.SelectionHistory;
 import pl.edu.agh.mcc.tasks.MatrixTaskLocal;
 import pl.edu.agh.mcc.tasks.MatrixTaskRemote;
 import weka.classifiers.Classifier;
@@ -26,7 +29,12 @@ public class LocationExecutionDecider {
     private Instances batteryPredictionSet;
     private Classifier timeClassifier;
     private Classifier batteryClassifier;
+    public List<CloudExecutionRatio> ratio;
+    public List<SelectionHistory> selectionHistoryList;
 
+    public LocationExecutionDecider() {
+
+    }
     public LocationExecutionDecider(Intent batteryStatus, Context context) {
         this.batteryStatus = batteryStatus;
         this.context = context;
@@ -45,13 +53,15 @@ public class LocationExecutionDecider {
 
         timeClassifier = new MultilayerPerceptron();
         batteryClassifier = new MultilayerPerceptron();
+        ratio = new ArrayList<CloudExecutionRatio>();
+        selectionHistoryList = new ArrayList<>();
     }
 
     private InstrumentationData executeTaskAndGatherMetrics(int matrixSize, InstrumentationData.EXECUTION execution) {
         InstrumentationData instrumentedEventData = new InstrumentationData(context);
         Thread task;
         if (execution == InstrumentationData.EXECUTION.CLOUD) {
-            task = new Thread(new MatrixTaskRemote(matrixSize, instrumentedEventData));
+            task = new Thread(new MatrixTaskRemote(matrixSize, instrumentedEventData, this));
         } else {
             task = new Thread(new MatrixTaskLocal(matrixSize, instrumentedEventData));
         }
@@ -71,7 +81,6 @@ public class LocationExecutionDecider {
         instrumentedEventData.timeMeasurements.endTime = System.currentTimeMillis();
         instrumentedEventData.timeMeasurements.updateTotalTime();
         instrumentedEventData.batteryInformation.endValueUpdate(batteryStatus, context);
-
         return instrumentedEventData;
     }
 
@@ -83,7 +92,7 @@ public class LocationExecutionDecider {
             int randMatrixSize = rand.nextInt(1000); //size??
             int pick = rand.nextInt(InstrumentationData.EXECUTION.values().length);
             InstrumentationData.EXECUTION randExecutionLocation = InstrumentationData.EXECUTION.values()[pick];
-            InstrumentationData instrumentationData = executeTaskAndGatherMetrics(randMatrixSize, randExecutionLocation);
+            InstrumentationData instrumentationData = executeTaskAndGatherMetrics(500, randExecutionLocation);
             trainData.add(instrumentationData);
         }
         return trainData;
@@ -147,7 +156,11 @@ public class LocationExecutionDecider {
             batteryClassifier.buildClassifier(batteryPredictionSet);
 
         }
+
+
         InstrumentationData instrumentedEventData = new InstrumentationData(context);
+
+
 
         //predict time for local
         double[] valuesTimeLocal = new double[4];
@@ -189,7 +202,19 @@ public class LocationExecutionDecider {
         double predictedCostForCloud = (timeForCloud*0.5 + batteryForCloud*0.5)/2;
         double predictedCostForLocal = (timeForLocal*0.5 + batteryForLocal*0.5)/2;
         InstrumentationData instrumentationData;
-        if (predictedCostForLocal > predictedCostForCloud) {
+
+        Boolean isCloudRatioBigger = false;
+
+        for(CloudExecutionRatio r : ratio) {
+            if (r.networkType == instrumentedEventData.networkInformation.connectionType && matrixSize >= r.taskSizeRangeMin && matrixSize <= r.taskSizeRangeMax) {
+                if (r.cloudExecutionRatio >= 0.7) {
+                    isCloudRatioBigger = true;
+                    break;
+                }
+            }
+        }
+
+        if (predictedCostForLocal > predictedCostForCloud || isCloudRatioBigger == true) {
             instrumentationData = executeTaskAndGatherMetrics(matrixSize, InstrumentationData.EXECUTION.CLOUD);
             //instrumentationData = executeTaskAndGatherMetrics(100, InstrumentationData.EXECUTION.LOCAL);
             valuesTimeCloud[3] = instrumentationData.timeMeasurements.totalTime;
@@ -206,6 +231,8 @@ public class LocationExecutionDecider {
         }
         timeClassifier.buildClassifier(timePredictionSet);
         batteryClassifier.buildClassifier(batteryPredictionSet);
+        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+        selectionHistoryList.add(new SelectionHistory(timestamp.toString(), instrumentationData.networkInformation.connectionType, matrixSize, instrumentationData.executionLocation));
         return instrumentationData;
     }
 

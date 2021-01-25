@@ -12,11 +12,14 @@ import android.widget.TextView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import pl.edu.agh.mcc.ML.LocationExecutionDecider;
+import pl.edu.agh.mcc.descriptors.cloud.CloudExecutionRatio;
 import pl.edu.agh.mcc.tasks.MatrixTaskLocal;
 import pl.edu.agh.mcc.tasks.MatrixTaskRemote;
 
@@ -72,6 +75,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         Button chooseLocationButton = findViewById(R.id.chooseLocationButton);
+        LocationExecutionDecider executionDecider = new LocationExecutionDecider(batteryStatus, this);
         chooseLocationButton.setText("Run task");
         chooseLocationButton.setOnClickListener(v -> {
             int taskSize = 200;
@@ -81,7 +85,6 @@ public class MainActivity extends AppCompatActivity {
                 System.out.println("Wrong input size, defaulting to: " + taskSize);
                 this.sizeInputField.setText(String.valueOf(taskSize));
             }
-            LocationExecutionDecider executionDecider = new LocationExecutionDecider(batteryStatus, this);
             InstrumentationData results = null;
             try {
                 results = executionDecider.chooseExecutionLocation(taskSize);

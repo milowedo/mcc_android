@@ -2,22 +2,27 @@ package pl.edu.agh.mcc.tasks;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.internal.LinkedTreeMap;
 import com.google.gson.reflect.TypeToken;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
 import pl.edu.agh.mcc.InstrumentationData;
+import pl.edu.agh.mcc.ML.LocationExecutionDecider;
 import pl.edu.agh.mcc.descriptors.DeviceInformation;
 import pl.edu.agh.mcc.descriptors.cloud.CloudExecutionRatio;
 import pl.edu.agh.mcc.descriptors.cloud.CloudMetrics;
@@ -29,7 +34,17 @@ public class MatrixTaskRemote implements Runnable {
     private final double[][] array;
     private final double coeff;
     private final InstrumentationData instrumentationDataObject;
+    //private List<CloudExecutionRatio> ratio;
+    private LocationExecutionDecider decider;
 
+    public MatrixTaskRemote(int matrixSize, InstrumentationData instrumentedEventData, LocationExecutionDecider decider) {
+        this.size = matrixSize;
+        this.array = new double[size][size];
+        this.coeff = new Random().nextDouble();
+        instrumentationDataObject = instrumentedEventData;
+        this.instrumentationDataObject.executionLocation = InstrumentationData.EXECUTION.CLOUD;
+        this.decider = decider;
+    }
     public MatrixTaskRemote(int matrixSize, InstrumentationData instrumentedEventData) {
         this.size = matrixSize;
         this.array = new double[size][size];
@@ -74,10 +89,10 @@ public class MatrixTaskRemote implements Runnable {
             Gson gson = new GsonBuilder().create();
 
             // Here is the mock of the selectionHistory, the list should be real from the device
-            SelectionHistory selectionHistory = new SelectionHistory(123123, "LTE", 123, InstrumentationData.EXECUTION.LOCAL);
-            List<SelectionHistory> selectionHistoryList = Arrays.asList(selectionHistory, selectionHistory);
+            //SelectionHistory selectionHistory = new SelectionHistory("123123", "LTE", 123, InstrumentationData.EXECUTION.LOCAL);
+            //List<SelectionHistory> selectionHistoryList = Arrays.asList(selectionHistory, selectionHistory);
 
-            String jsonBody = gson.toJson(new RequestClass(array, instrumentationDataObject.deviceInformation, selectionHistoryList));
+            String jsonBody = gson.toJson(new RequestClass(array, instrumentationDataObject.deviceInformation, decider.selectionHistoryList));
 
             // Sending the response
             try (OutputStream os = con.getOutputStream()) {
@@ -133,8 +148,22 @@ public class MatrixTaskRemote implements Runnable {
                     metricsMap.get("timestamp"));
         }
 
-        List<CloudExecutionRatio> cloudExecutionRatioList = (List<CloudExecutionRatio>) map.get("cloudExecutionRatioList");
-        System.out.println("Execution ratios returned count: " + cloudExecutionRatioList.size());
+        //List<CloudExecutionRatio> cloudExecutionRatioList = (List<CloudExecutionRatio>) map.get("cloudExecutionRatioList");
+        decider.ratio.clear();
+        ArrayList<LinkedTreeMap<String, Object>> ratioList = (ArrayList<LinkedTreeMap<String, Object>>) map.get("cloudExecutionRatioList");
+        for (LinkedTreeMap<String, Object> ratio : ratioList) {
+            String network = (String) ratio.get("networkType");
+            Double taskMin = (Double)ratio.get("taskSizeRangeMin");
+            Double taskMax = (Double) ratio.get("taskSizeRangeMax");
+            Double cloudRatio = (Double) ratio.get("cloudExecutionRatio");
+            decider.ratio.add(new CloudExecutionRatio(network, taskMin.intValue(), taskMax.intValue(), cloudRatio));
+
+        }
+
+
+
+        //System.out.println("Execution ratios returned count: " + decider.ratio.size());
+
     }
 
     public static Map<String, String> convert(String str) {
